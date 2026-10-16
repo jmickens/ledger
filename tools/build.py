@@ -12,7 +12,9 @@ src_path, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 src = src_path.read_text()
 cut = src.index('<header class="top">')
 head_part, body_part = src[:cut], src[cut:]
-version = hashlib.sha1(src.encode()).hexdigest()[:10]
+icons_dir = pathlib.Path(__file__).resolve().parent.parent / "icons"
+icon_v = hashlib.sha1(b"".join(f.read_bytes() for f in sorted(icons_dir.glob("*.png")))).hexdigest()[:8]
+version = hashlib.sha1(src.encode() + icon_v.encode()).hexdigest()[:10]
 
 html = f"""<!doctype html>
 <html lang="en">
@@ -27,8 +29,8 @@ html = f"""<!doctype html>
 <meta name="theme-color" content="#F4F4F1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E0F10" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v={icon_v}">
+<link rel="icon" type="image/png" href="icons/favicon-32.png?v={icon_v}">
 <style>
 :root{{padding-top:env(safe-area-inset-top,0px)}}
 body{{margin:0}}
@@ -92,7 +94,7 @@ out.mkdir(parents=True, exist_ok=True)
 (out / "manifest.webmanifest").write_text(json.dumps(manifest, indent=2))
 (out / "sw.js").write_text(sw)
 (out / ".nojekyll").write_text("")
-icons_src = pathlib.Path(__file__).resolve().parent.parent / "icons"
+icons_src = icons_dir
 if icons_src.resolve() != (out / "icons").resolve():
     shutil.copytree(icons_src, out / "icons", dirs_exist_ok=True)
 print(f"built {out} (version {version})")
